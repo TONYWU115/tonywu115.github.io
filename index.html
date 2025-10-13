@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spider Web Animation</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: radial-gradient(circle, #1a1a2e, #16213e);
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="netCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById("netCanvas");
+        const ctx = canvas.getContext("2d");
+        const numPoints = 20; // 橫向與縱向的點數
+        const points = [];
+        const mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        class Point {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.originX = x;
+                this.originY = y;
+                this.size = 3;
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = "white";
+                ctx.fill();
+            }
+            update() {
+                const dx = mouse.x - this.x;
+                const dy = mouse.y - this.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const force = Math.min(200 / dist, 8);
+                const angle = Math.atan2(dy, dx);
+                this.x += Math.cos(angle) * force;
+                this.y += Math.sin(angle) * force;
+                this.x += (this.originX - this.x) * 0.05;
+                this.y += (this.originY - this.y) * 0.05;
+                this.draw();
+            }
+        }
+
+        function resetPoints() {
+            points.length = 0;
+            const stepX = window.innerWidth / (numPoints + 1);
+            const stepY = window.innerHeight / (numPoints + 1);
+            for (let i = 1; i <= numPoints; i++) {
+                for (let j = 1; j <= numPoints; j++) {
+                    const x = i * stepX;
+                    const y = j * stepY;
+                    points.push(new Point(x, y));
+                }
+            }
+        }
+
+        function connectPoints() {
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.6)";
+            ctx.lineWidth = 1;
+            for (let i = 0; i < points.length; i++) {
+                for (let j = i + 1; j < points.length; j++) {
+                    const dx = points[i].x - points[j].x;
+                    const dy = points[i].y - points[j].y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance < 100) {
+                        ctx.beginPath();
+                        ctx.moveTo(points[i].x, points[i].y);
+                        ctx.lineTo(points[j].x, points[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            points.forEach((point) => point.update());
+            connectPoints();
+            requestAnimationFrame(animate);
+        }
+
+        canvas.addEventListener("mousemove", (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+
+        canvas.addEventListener("click", () => {
+            points.forEach((point) => {
+                point.x += Math.random() * 50 - 25;
+                point.y += Math.random() * 50 - 25;
+            });
+        });
+
+        window.addEventListener("resize", resizeCanvas);
+
+        resizeCanvas();
+        resetPoints();
+        animate();
+    </script>
+</body>
+</html>
